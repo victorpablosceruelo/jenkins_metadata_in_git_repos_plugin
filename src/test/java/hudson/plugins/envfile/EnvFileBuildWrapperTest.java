@@ -1,5 +1,6 @@
 package hudson.plugins.envfile;
 
+import org.jenkinsci.envfile.EnvFileBuildWrapper;
 import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.io.IOException;

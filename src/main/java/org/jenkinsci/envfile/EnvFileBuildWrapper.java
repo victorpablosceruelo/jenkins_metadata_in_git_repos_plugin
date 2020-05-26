@@ -1,4 +1,4 @@
-package hudson.plugins.envfile;
+package org.jenkinsci.envfile;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -7,6 +7,7 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.plugins.envfile.Messages;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 

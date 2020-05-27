@@ -32,37 +32,36 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
  */
 public class GitRepoManager {
     
-    private static final int RETRY_INITIAL_VALUE = 1;
     private static final int MAX_RETRIES_FOR_OPERATION = 5;
     private static final String GIT_REPOSITORY_TAIL = "/.git";
-    private static final String GIT_REPOSITORY_LOCAL_PATH = "/tmp/jenkinsMetadataInGitRepo";
+    private static final String GIT_REPOSITORY_LOCAL_PATH = "/tmp/jenkins_projects_metadata";
     
     private static final Logger LOGGER = Logger.getLogger(GitRepoManager.class.getName());
     private static Object mutex = new Object();
     
-    public static String updateLocalRepoIfNeedTo(String repoUrl) {
+    public static String updateLocalRepoIfNeedTo(String repoUrl, String gitRepoUsername, String gitRepoPassword) {
         synchronized(mutex) {
-            String repoPath = GIT_REPOSITORY_LOCAL_PATH;
+            final String repoPath = GIT_REPOSITORY_LOCAL_PATH;
 
-            GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, null, null);
-            gitRepoManager.updateLocalRepoIfNeedTo(RETRY_INITIAL_VALUE);
+            GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, gitRepoUsername, gitRepoPassword);
+            gitRepoManager.updateLocalRepoIfNeedTo(0);
 
             return repoPath;
         }
     }
     
-    private String remotePath;
-    private String localPath;
+    private final String remotePath;
+    private final String localPath;
     private Repository localRepo;
     private CredentialsProvider credentialsProvider;
     
-    private GitRepoManager(String remotePath, String localPath, String username, String password) {
+    private GitRepoManager(final String remotePath, final String localPath, final String gitRepoUsername, final String gitRepoPassword) {
         
         this.remotePath = remotePath;
         this.localPath = localPath;
 
-        if ((username != null) && (password != null)) {
-            credentialsProvider = new UsernamePasswordCredentialsProvider(username, password);
+        if ((gitRepoUsername != null) && (gitRepoPassword != null)) {
+            credentialsProvider = new UsernamePasswordCredentialsProvider(gitRepoUsername, gitRepoPassword);
         }
         
     }
@@ -78,11 +77,11 @@ public class GitRepoManager {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "cloneRepo: ", e);
         }
-        cloneRepo(retry++);
+        cloneRepo(retry+1);
     }
     
     private void cloneRepoAux() throws IOException, NoFilepatternException, GitAPIException {
-        Git.cloneRepository()//.setCredentialsProvider(credentialsProvider)
+        Git.cloneRepository().setCredentialsProvider(credentialsProvider)
                 .setURI(remotePath)
                 .setDirectory(new File(localPath))
                 .call();
@@ -99,7 +98,7 @@ public class GitRepoManager {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
         }
-        pullFromRepo(retry++);
+        pullFromRepo(retry+1);
     }
     
     private void pullFromRepoAux() throws IOException, WrongRepositoryStateException,
@@ -109,7 +108,7 @@ public class GitRepoManager {
         
         localRepo = new FileRepository(getFileRepositoryPath());
         Git git = new Git(localRepo);
-        git.pull()//.setCredentialsProvider(credentialsProvider)
+        git.pull().setCredentialsProvider(credentialsProvider)
                 .call();
     }
     
@@ -126,16 +125,16 @@ public class GitRepoManager {
         if ((fileRepository.exists()) && (fileRepository.isDirectory()) && 
                 (fileRepository.canRead()) && (fileRepository.canWrite()) && 
                 (fileRepository.canExecute())) {
-            pullFromRepo(RETRY_INITIAL_VALUE);
+            pullFromRepo(0);
         }
         else {
             removeLocalRepository();
             File parentFolder = new File(localPath);
             if (parentFolder.exists()) {
-                updateLocalRepoIfNeedTo(retry++);
+                updateLocalRepoIfNeedTo(retry+1);
             }
             else {
-                cloneRepo(RETRY_INITIAL_VALUE);
+                cloneRepo(0);
             }
         }
     }

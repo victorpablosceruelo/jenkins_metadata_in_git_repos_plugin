@@ -8,12 +8,26 @@
          xmlns:t="/lib/hudson"
          xmlns:c="/lib/credentials">
 
-  <f:section title="Metadata in Git Repo Plugin">
+  <f:section title="Metadata in Git Repository Plugin">
 
-    <f:entry title="Metadata Repository URL">
+    <f:entry title="Jenkins Metadata Git Repository URL">
       <f:textbox field="metadataRepositoryUrl" default=""/>
       <f:description>
-       We'll get from that url the vars the job needs for running. Recommended value: <b>https://username:password@gitlab.example.com:groups/projectsMetadata.git</b>
+       We'll get from that url the vars the job needs for running. Recommended value: <b>https://username:password@gitlab.example.com:groups/jenkins_projects_metadata.git</b>
+      </f:description>
+    </f:entry>
+    
+    <f:entry title="Git Repository Username">
+      <f:textbox field="gitRepoUsername" default=""/>
+      <f:description>
+       Username
+      </f:description>
+    </f:entry>
+    
+    <f:entry title="Git Repository Password">
+      <f:textbox field="gitRepoPassword" default=""/>
+      <f:description>
+       Password
       </f:description>
     </f:entry>
 

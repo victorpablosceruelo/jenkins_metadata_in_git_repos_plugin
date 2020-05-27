@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.global.MetadataInGitRepoPluginData;
+import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers.FilesFinder;
 import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers.GitRepoManager;
 
 
@@ -35,16 +36,26 @@ public class MetadataInGitRepoPluginBuildWrapper extends EnvironmentContributor 
         
         LOGGER.warning("buildVariablesFor");
         
-        final String repoUrl = MetadataInGitRepoPluginData.get().getMetadataRepositoryUrl();
-        final String repoPath = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl);
+        MetadataInGitRepoPluginData data = MetadataInGitRepoPluginData.get();
         
-        final Map<String, String> resolvedVariables = new HashMap<>();
+        final String repoUrl = data.getMetadataRepositoryUrl();
+        final String gitRepoUsername = data.getGitRepoUsername();
+        final String gitRepoPassword = data.getGitRepoPassword();
+        final String repoPath = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl, gitRepoUsername, gitRepoPassword);
         
+        final String jobName = envs.get("JOB_NAME", "");
+        final Map<String, String> resolvedVariables = FilesFinder.getResolvedVariables(repoPath, jobName);
         
-        for (final String variable : resolvedVariables.keySet()) {
-            final String resolved = resolvedVariables.get(variable);
-            listener.getLogger().println("    " + variable + " = " + resolved);
-            envs.override(variable, resolved);
+        listener.getLogger().println("\nVariables in environment: ");
+        for (final Map.Entry<String, String> entry : envs.entrySet()) {
+            listener.getLogger().println("    " + entry.getKey() + " = " + entry.getValue());
+        }
+        
+        listener.getLogger().println("\nVariables set from metadata: ");
+        for (final Map.Entry<String, String> entry : resolvedVariables.entrySet()) {
+
+            listener.getLogger().println("    " + entry.getKey() + " = " + entry.getValue());
+            envs.override(entry.getKey(), entry.getValue());
         }
         listener.getLogger().println("\n");
         

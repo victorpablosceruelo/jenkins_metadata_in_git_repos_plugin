@@ -18,6 +18,8 @@ public class MetadataInGitRepoPluginData extends GlobalConfiguration implements 
   }
 
   private String metadataRepositoryUrl;
+  private String gitRepoUsername;
+  private String gitRepoPassword;
 
   @VisibleForTesting
   public MetadataInGitRepoPluginData(final String metadataRepositoryUrl) {
@@ -38,7 +40,9 @@ public class MetadataInGitRepoPluginData extends GlobalConfiguration implements 
   }
 
   private void cleanUpInstanceValues() {
-    setMetadataRepositoryUrl(new String());
+    setMetadataRepositoryUrl("");
+    setGitRepoUsername("");
+    setGitRepoPassword("");
   }
 
 
@@ -51,4 +55,22 @@ public class MetadataInGitRepoPluginData extends GlobalConfiguration implements 
     return metadataRepositoryUrl;
   }
 
+  @DataBoundSetter
+  public void setGitRepoUsername(final String gitRepoUsername) {
+    this.gitRepoUsername = gitRepoUsername;
+  }
+
+  public String getGitRepoUsername() {
+    return gitRepoUsername;
+  }
+  
+  @DataBoundSetter
+  public void setGitRepoPassword(final String gitRepoPassword) {
+    this.gitRepoPassword = gitRepoPassword;
+  }
+
+  public String getGitRepoPassword() {
+    return gitRepoPassword;
+  }
+  
 }

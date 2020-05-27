@@ -1,13 +1,9 @@
 package hudson.plugins.envfile;
 
-import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.MetadataInGitRepoPlugin.MetadataInGitRepoPluginBuildWrapper;
 import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.io.IOException;
-import java.io.File;
-
-import hudson.model.FreeStyleProject;
-import hudson.tasks.BuildWrapper;
+import java.util.logging.Logger;
 
 /**
  * Created by IntelliJ IDEA.
@@ -18,10 +14,9 @@ import hudson.tasks.BuildWrapper;
  */
 public class EnvFileBuildWrapperTest extends HudsonTestCase {
 
+    private static final Logger LOGGER = Logger.getLogger(EnvFileBuildWrapperTest.class.getName());
+    
     public void testBasic() throws IOException {
-        FreeStyleProject project = super.createFreeStyleProject();
-        File tf = new File(hudson.getRootDir(), "test.env");
-        BuildWrapper bw = new MetadataInGitRepoPluginBuildWrapper(tf.getAbsolutePath());
-        //possibly, come back here and complete the test with higher version of hudson (e.g. getBuildWrapperList)
+        LOGGER.warning("EnvFileBuildWrapperTest:testBasic");
     }
 }

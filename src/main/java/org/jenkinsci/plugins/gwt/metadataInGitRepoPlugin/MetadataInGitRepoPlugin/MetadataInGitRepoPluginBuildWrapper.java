@@ -1,13 +1,14 @@
-package org.jenkinsci.envfile;
+package org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.MetadataInGitRepoPlugin;
 
 import hudson.EnvVars;
 import hudson.Extension;
+import hudson.ExtensionPoint;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.plugins.envfile.Messages;
+import org.jenkinsci.plugins.gwt.jenkinsMetadataInGitRepoPlugin.Messages;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 
@@ -28,14 +29,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author Anders Johansson
  *
  */
-public class EnvFileBuildWrapper extends BuildWrapper{
+public class MetadataInGitRepoPluginBuildWrapper extends BuildWrapper implements ExtensionPoint {
 
-	private static final Logger logger = Logger.getLogger(EnvFileBuildWrapper.class.getName());
+	private static final Logger logger = Logger.getLogger(MetadataInGitRepoPluginBuildWrapper.class.getName());
 	private static final String NAME = "[envfile] ";
 	private String filePath;
 
 	@DataBoundConstructor
-	public EnvFileBuildWrapper(String filePath) {
+	public MetadataInGitRepoPluginBuildWrapper(String filePath) {
 		this.filePath=Util.fixEmpty(filePath);
 	}
 
@@ -65,6 +66,9 @@ public class EnvFileBuildWrapper extends BuildWrapper{
 
 		logger.fine("Reading environment variables from file. ");
 
+                build.getBuildVariables().put("JOB", "alcahueta");
+                
+                
 		return new EnvironmentImpl(listener);
 	}
 

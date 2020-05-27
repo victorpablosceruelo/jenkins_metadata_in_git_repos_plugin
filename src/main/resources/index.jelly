@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
-  This plugin can be used to set environment variables from a file. 
+  This plugin can be used to assign metadata in a Git repository to job parameters.
 </div>

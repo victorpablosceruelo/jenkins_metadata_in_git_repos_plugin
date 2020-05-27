@@ -2,10 +2,7 @@ package org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.MetadataInGitRepoPlugi
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.model.AbstractBuild;
 import hudson.model.EnvironmentContributor;
-import hudson.model.ParameterValue;
-import hudson.model.ParametersAction;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.IOException;
@@ -13,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.global.MetadataInGitRepoPluginData;
+import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers.GitRepoManager;
 
 
 /**
@@ -35,6 +34,19 @@ public class MetadataInGitRepoPluginBuildWrapper extends EnvironmentContributor 
         throws IOException, InterruptedException {
         
         LOGGER.warning("buildVariablesFor");
+        
+        final String repoUrl = MetadataInGitRepoPluginData.get().getMetadataRepositoryUrl();
+        final String repoPath = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl);
+        
+        final Map<String, String> resolvedVariables = new HashMap<>();
+        
+        
+        for (final String variable : resolvedVariables.keySet()) {
+            final String resolved = resolvedVariables.get(variable);
+            listener.getLogger().println("    " + variable + " = " + resolved);
+            envs.override(variable, resolved);
+        }
+        listener.getLogger().println("\n");
         
     }
 }

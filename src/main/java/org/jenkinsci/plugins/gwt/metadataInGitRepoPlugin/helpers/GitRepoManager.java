@@ -34,12 +34,15 @@ public class GitRepoManager {
     
     private static final int RETRY_INITIAL_VALUE = 1;
     private static final int MAX_RETRIES_FOR_OPERATION = 5;
+    private static final String GIT_REPOSITORY_TAIL = "/.git";
+    private static final String GIT_REPOSITORY_LOCAL_PATH = "/tmp/jenkinsMetadataInGitRepo";
+    
     private static final Logger LOGGER = Logger.getLogger(GitRepoManager.class.getName());
     private static Object mutex = new Object();
     
     public static String updateLocalRepoIfNeedTo(String repoUrl) {
         synchronized(mutex) {
-            String repoPath = "/tmp/";
+            String repoPath = GIT_REPOSITORY_LOCAL_PATH;
 
             GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, null, null);
             gitRepoManager.updateLocalRepoIfNeedTo(RETRY_INITIAL_VALUE);
@@ -111,7 +114,7 @@ public class GitRepoManager {
     }
     
     private String getFileRepositoryPath() {
-        return localPath + "/.git";
+        return localPath + GIT_REPOSITORY_TAIL;
     }
     
     private void updateLocalRepoIfNeedTo(int retry) {

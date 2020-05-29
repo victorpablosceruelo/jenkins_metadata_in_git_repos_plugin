@@ -130,7 +130,7 @@ public class FilesFinder {
                 StringBuilder sbMsg = new StringBuilder();
                 sbMsg.append(" key: ").append(key);
                 sbMsg.append(" value: ").append(value);
-                jobLogger.print(sbMsg.toString());
+                jobLogger.println(sbMsg.toString());
                 
                 resolvedVariables.put(key, value);
                 

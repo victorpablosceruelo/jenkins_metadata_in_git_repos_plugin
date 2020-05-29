@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.jgit.api.Git;
@@ -39,13 +41,32 @@ public class GitRepoManager {
     
     private static final Logger LOGGER = Logger.getLogger(GitRepoManager.class.getName());
     private static Object mutex = new Object();
+    private static Date lastUpdateTime = null;
     
     public static boolean updateLocalRepoIfNeedTo(String repoUrl, String gitRepoUsername, String gitRepoPassword, PrintStream jobLogger) {
         synchronized(mutex) {
             final String repoPath = GIT_REPOSITORY_LOCAL_PATH;
-
-            GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, gitRepoUsername, gitRepoPassword, jobLogger);
-            return gitRepoManager.updateLocalRepoIfNeedTo();
+            boolean updateRepoOk = false;
+            
+            Date currentDate = new Date();
+            if ((lastUpdateTime == null) || (currentDate.after(lastUpdateTime))) {
+                
+                jobLogger.println("Updating local copy of git repository " + repoPath);
+                GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, gitRepoUsername, gitRepoPassword, jobLogger);
+                updateRepoOk = gitRepoManager.updateLocalRepoIfNeedTo();
+            } else {
+                jobLogger.println("**NOT** updating local copy of git repository " + repoPath);
+                return true;
+            }
+            
+            if (updateRepoOk) {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(currentDate);
+                calendar.add(Calendar.MINUTE, 2);
+                lastUpdateTime = calendar.getTime();
+            }
+            
+            return updateRepoOk;
         }
     }
     

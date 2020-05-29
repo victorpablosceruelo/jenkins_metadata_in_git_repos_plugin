@@ -34,7 +34,7 @@ public class MetadataInGitRepoPluginBuildWrapper extends EnvironmentContributor 
         @Nonnull final TaskListener listener)
         throws IOException, InterruptedException {
         
-        LOGGER.warning("buildVariablesFor");
+        // LOGGER.warning("buildVariablesFor");
         
         MetadataInGitRepoPluginData data = MetadataInGitRepoPluginData.get();
         
@@ -49,9 +49,15 @@ public class MetadataInGitRepoPluginBuildWrapper extends EnvironmentContributor 
             resolvedVariables = FilesFinder.getResolvedVariables(jobName, listener.getLogger());
         }
         
-        listener.getLogger().println("\nVariables in environment: ");
-        for (final Map.Entry<String, String> entry : envs.entrySet()) {
-            listener.getLogger().println("    " + entry.getKey() + " = " + entry.getValue());
+        listener.getLogger().println("\nVariables previously defined in environment: ");
+        // for (final Map.Entry<String, String> entry : envs.entrySet()) {
+        //     listener.getLogger().println("    " + entry.getKey() + " = " + entry.getValue());
+        // }
+        for (String key : resolvedVariables.keySet()) {
+            String oldValue = envs.get(key, null);
+            if (oldValue != null) {
+                listener.getLogger().println("    " + key + " = " + oldValue);
+            }
         }
         
         listener.getLogger().println("\nVariables set from metadata: ");

@@ -29,7 +29,9 @@ public class FilesFinder {
     
     private static final String REG_EXP = File.separator;
     
-    public static Map<String, String>  getResolvedVariables(final String repoPath, final String jobName, PrintStream jobLogger) {
+    public static Map<String, String>  getResolvedVariables(final String jobName, PrintStream jobLogger) {
+    
+        final String repoPath = GitRepoManager.GIT_REPOSITORY_LOCAL_PATH;
         
         StringBuilder sbMsg = new StringBuilder();
         sbMsg.append("getResolvedVariables: repoPath: ").append(repoPath);

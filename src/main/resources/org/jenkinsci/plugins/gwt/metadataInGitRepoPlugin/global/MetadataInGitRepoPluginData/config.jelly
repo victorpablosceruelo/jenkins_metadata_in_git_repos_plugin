@@ -13,23 +13,39 @@
     <f:entry title="Jenkins Metadata Git Repository URL">
       <f:textbox field="metadataRepositoryUrl" default=""/>
       <f:description>
-       We'll get from that url the vars the job needs for running. Recommended value: <b>https://username:password@gitlab.example.com:groups/jenkins_projects_metadata.git</b>
+       We'll get from that url the vars the job needs for running. Recommended value: <b>https://gitlab.example.com:groups/jenkins_projects_metadata.git</b>
       </f:description>
     </f:entry>
     
     <f:entry title="Git Repository Username">
       <f:textbox field="gitRepoUsername" default=""/>
       <f:description>
-       Username
+       Username. Recommended value: token
       </f:description>
     </f:entry>
     
     <f:entry title="Git Repository Password">
       <f:textbox field="gitRepoPassword" default=""/>
       <f:description>
-       Password
+       Password. Recommended value: the token value
       </f:description>
     </f:entry>
 
+    <f:description>
+        <div>
+            <p>
+                We use jgit behind the scenes. This means that the pair username/password can take the following values:
+            </p>
+            <p>
+                new UsernamePasswordCredentialsProvider("token","Personal Access Token")); 
+            </p>
+            <p>
+                new UsernamePasswordCredentialsProvider("the owner name of the repository","Personal Access Token")); 
+            </p>
+            <p>
+                new UsernamePasswordCredentialsProvider("","Personal Access Token"));
+            </p>
+        </div>
+    </f:description>
   </f:section>
 </j:jelly>

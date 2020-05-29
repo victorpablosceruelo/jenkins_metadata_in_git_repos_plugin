@@ -41,10 +41,13 @@ public class MetadataInGitRepoPluginBuildWrapper extends EnvironmentContributor 
         final String repoUrl = data.getMetadataRepositoryUrl();
         final String gitRepoUsername = data.getGitRepoUsername();
         final String gitRepoPassword = data.getGitRepoPassword();
-        final String repoPath = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl, gitRepoUsername, gitRepoPassword);
+        final boolean opOk = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl, gitRepoUsername, gitRepoPassword, listener.getLogger());
         
-        final String jobName = envs.get("JOB_NAME", "");
-        final Map<String, String> resolvedVariables = FilesFinder.getResolvedVariables(repoPath, jobName, listener.getLogger());
+        Map<String, String> resolvedVariables = new HashMap<>();
+        if (opOk) {
+            final String jobName = envs.get("JOB_NAME", "");
+            resolvedVariables = FilesFinder.getResolvedVariables(jobName, listener.getLogger());
+        }
         
         listener.getLogger().println("\nVariables in environment: ");
         for (final Map.Entry<String, String> entry : envs.entrySet()) {

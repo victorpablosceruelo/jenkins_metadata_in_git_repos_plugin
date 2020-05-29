@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +42,7 @@ public class GitRepoManager {
     private static Object mutex = new Object();
     private static Date lastUpdateTime = null;
     
-    public static boolean updateLocalRepoIfNeedTo(String repoUrl, String gitRepoUsername, String gitRepoPassword, PrintStream jobLogger) {
+    public static boolean updateLocalRepoIfNeedTo(String repoUrl, String gitRepoUsername, String gitRepoPassword, OneTimeLogger oneTimeLogger) {
         synchronized(mutex) {
             final String repoPath = GIT_REPOSITORY_LOCAL_PATH;
             boolean updateRepoOk = false;
@@ -51,11 +50,11 @@ public class GitRepoManager {
             Date currentDate = new Date();
             if ((lastUpdateTime == null) || (currentDate.after(lastUpdateTime))) {
                 
-                jobLogger.println("Updating local copy of git repository " + repoPath);
-                GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, gitRepoUsername, gitRepoPassword, jobLogger);
+                oneTimeLogger.println("Updating local copy of git repository " + repoPath);
+                GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, gitRepoUsername, gitRepoPassword, oneTimeLogger);
                 updateRepoOk = gitRepoManager.updateLocalRepoIfNeedTo();
             } else {
-                jobLogger.println("**NOT** updating local copy of git repository " + repoPath);
+                oneTimeLogger.println("**NOT** updating local copy of git repository " + repoPath);
                 return true;
             }
             
@@ -70,7 +69,7 @@ public class GitRepoManager {
         }
     }
     
-    private PrintStream jobLogger;
+    private OneTimeLogger oneTimeLogger;
     private int currentRetry;
     
     private final String remotePath;
@@ -79,9 +78,9 @@ public class GitRepoManager {
     private CredentialsProvider credentialsProvider;
     
     
-    private GitRepoManager(final String remotePath, final String localPath, final String gitRepoUsername, final String gitRepoPassword, PrintStream jobLogger) {
+    private GitRepoManager(final String remotePath, final String localPath, final String gitRepoUsername, final String gitRepoPassword, OneTimeLogger oneTimeLogger) {
         
-        this.jobLogger = jobLogger;
+        this.oneTimeLogger = oneTimeLogger;
         this.currentRetry = 0;
         
         this.remotePath = remotePath;
@@ -103,12 +102,12 @@ public class GitRepoManager {
             return true;
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "cloneRepo: ", e);
-            jobLogger.println("Error cloning remote git repository: " + e.getMessage());
+            oneTimeLogger.println("Error cloning remote git repository: " + e.getMessage());
             removeLocalRepositoryIfExists();
             return false;
         } catch (GitAPIException e) {
             LOGGER.log(Level.SEVERE, "cloneRepo: ", e);
-            jobLogger.println("Error cloning remote git repository: " + e.getMessage());
+            oneTimeLogger.println("Error cloning remote git repository: " + e.getMessage());
         }
         currentRetry++;
         return cloneRepo();
@@ -131,12 +130,12 @@ public class GitRepoManager {
             return true;
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
-            jobLogger.println("Error pulling from git repository: " + e.getMessage());
+            oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
             removeLocalRepositoryIfExists();
             return false;
         } catch (GitAPIException e) {
             LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
-            jobLogger.println("Error pulling from git repository: " + e.getMessage());
+            oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
         }
         currentRetry++;
         return pullFromRepo();
@@ -189,11 +188,11 @@ public class GitRepoManager {
     private void removeLocalRepositoryIfExists() {
         File localRepoFolderFile = new File(localPath);
         if (! localRepoFolderFile.exists()) {
-            jobLogger.println("Local copy of git repository does not exist: " + localPath);
+            oneTimeLogger.println("Local copy of git repository does not exist: " + localPath);
             return;
         }
 
-        jobLogger.println("Removing folder: " + localPath);
+        oneTimeLogger.println("Removing folder: " + localPath);
         try {
             Path directory = Paths.get(localPath);
             Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
@@ -211,7 +210,7 @@ public class GitRepoManager {
             });
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "removeLocalRepository: ", e);
-            jobLogger.println("Error removing folder " + localPath);
+            oneTimeLogger.println("Error removing folder " + localPath);
         }
     }
 }

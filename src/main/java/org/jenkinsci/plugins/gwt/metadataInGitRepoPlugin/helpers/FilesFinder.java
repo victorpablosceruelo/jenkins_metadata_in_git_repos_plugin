@@ -10,11 +10,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -29,7 +29,7 @@ public class FilesFinder {
     
     private static final String REG_EXP = File.separator;
     
-    public static Map<String, String>  getResolvedVariables(final String jobName, PrintStream jobLogger) {
+    public static Map<String, String>  getResolvedVariables(final String jobName, OneTimeLogger oneTimeLogger) {
     
         final String repoPath = GitRepoManager.GIT_REPOSITORY_LOCAL_PATH;
         
@@ -42,12 +42,12 @@ public class FilesFinder {
         
         String[] jobNameArray = jobName.split(REG_EXP);
         
-        resolvedVariables = loadConfigFilesRecursively(repoPath, jobNameArray, resolvedVariables, jobLogger);
+        resolvedVariables = loadConfigFilesRecursively(repoPath, jobNameArray, resolvedVariables, oneTimeLogger);
         
         return resolvedVariables;
     }
     
-    private static Map<String, String> loadConfigFilesRecursively(String repoPath, String [] jobNameArray, Map<String, String> resolvedVariables, PrintStream jobLogger) {
+    private static Map<String, String> loadConfigFilesRecursively(String repoPath, String [] jobNameArray, Map<String, String> resolvedVariables, OneTimeLogger oneTimeLogger) {
 
         if (jobNameArray.length < 1) {
             return resolvedVariables;
@@ -58,36 +58,46 @@ public class FilesFinder {
         
         String configFileName = repoPath + File.separator + jobNameArray[0] + File.separator + CFG_FILE;
         
-        resolvedVariables = loadConfigFile(configFileName, resolvedVariables, jobLogger);
+        resolvedVariables = loadConfigFile(configFileName, resolvedVariables, oneTimeLogger);
         
         String [] jobNameArrayTail = Arrays.copyOfRange(jobNameArray, 1, jobNameArray.length);
         
         String repoPathWithHead = repoPath + File.separator + jobNameArray[0];
         
-        return loadConfigFilesRecursively(repoPathWithHead, jobNameArrayTail, resolvedVariables, jobLogger);
+        return loadConfigFilesRecursively(repoPathWithHead, jobNameArrayTail, resolvedVariables, oneTimeLogger);
     }
     
-    private static Map<String, String> loadConfigFile(String configFileName, Map<String, String> resolvedVariables, PrintStream jobLogger) {
+    private static Map<String, String> loadConfigFile(String configFileName, Map<String, String> resolvedVariables, OneTimeLogger oneTimeLogger) {
         
         if (! configFileExists(configFileName)) {
-            jobLogger.println("Not found config file " + configFileName);
+            oneTimeLogger.println("Not found config file " + configFileName);
             return resolvedVariables;
         }
 
         InputStream is = null;
         try {
-            jobLogger.println("Loading cfg in config file " + configFileName);
+            oneTimeLogger.println("Loading cfg in config file " + configFileName);
             is = new FileInputStream(configFileName);
-            return loadConfigFileAux(is, resolvedVariables, jobLogger);
+            return loadConfigFileAux(is, resolvedVariables, oneTimeLogger);
         } catch (Exception e) {
-            e.printStackTrace(jobLogger);
-            
+            StringBuilder sbMsg = new StringBuilder();
+            sbMsg.append("Error reading config file ").append(configFileName);
+            sbMsg.append(": ").append(e.getMessage());
+                    
+            oneTimeLogger.println(sbMsg.toString());
+            LOGGER.log(Level.SEVERE, sbMsg.toString(), e);
+        } finally {
             try {
                 if (is != null) {
                     is.close();
                 }
-            } catch (IOException ex2) {
-                ex2.printStackTrace(jobLogger);
+            } catch (IOException e) {
+                StringBuilder sbMsg = new StringBuilder();
+                sbMsg.append("Error closing config file ").append(configFileName);
+                sbMsg.append(": ").append(e.getMessage());
+
+                oneTimeLogger.println(sbMsg.toString());
+                LOGGER.log(Level.SEVERE, sbMsg.toString(), e);
             }
         }
         return resolvedVariables;
@@ -112,7 +122,7 @@ public class FilesFinder {
         return true;
     }
     
-    private static Map<String, String> loadConfigFileAux(InputStream is, Map<String, String> resolvedVariables, PrintStream jobLogger) 
+    private static Map<String, String> loadConfigFileAux(InputStream is, Map<String, String> resolvedVariables, OneTimeLogger oneTimeLogger) 
                     throws FileNotFoundException, IOException {
         
 
@@ -128,9 +138,8 @@ public class FilesFinder {
                 String value = (String) valueObj;
             
                 StringBuilder sbMsg = new StringBuilder();
-                sbMsg.append(" key: ").append(key);
-                sbMsg.append(" value: ").append(value);
-                jobLogger.println(sbMsg.toString());
+                sbMsg.append("    ").append(key).append(" = ").append(value);
+                oneTimeLogger.println(sbMsg.toString());
                 
                 resolvedVariables.put(key, value);
                 
@@ -138,7 +147,7 @@ public class FilesFinder {
                 StringBuilder sbMsg = new StringBuilder();
                 sbMsg.append("Could not read pair key: ").append(keyObj);
                 sbMsg.append(" value: ").append(valueObj);
-                jobLogger.println(sbMsg.toString());
+                oneTimeLogger.println(sbMsg.toString());
             }
         }
         

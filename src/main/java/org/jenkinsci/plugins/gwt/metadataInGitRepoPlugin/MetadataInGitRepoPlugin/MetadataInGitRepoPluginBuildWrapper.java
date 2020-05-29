@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.global.MetadataInGitRepoPluginData;
 import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers.FilesFinder;
 import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers.GitRepoManager;
+import org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers.OneTimeLogger;
 
 
 /**
@@ -35,38 +36,42 @@ public class MetadataInGitRepoPluginBuildWrapper extends EnvironmentContributor 
         throws IOException, InterruptedException {
         
         // LOGGER.warning("buildVariablesFor");
+        OneTimeLogger oneTimeLogger = OneTimeLogger.getInstance(r, listener);
+        
         
         MetadataInGitRepoPluginData data = MetadataInGitRepoPluginData.get();
         
         final String repoUrl = data.getMetadataRepositoryUrl();
         final String gitRepoUsername = data.getGitRepoUsername();
         final String gitRepoPassword = data.getGitRepoPassword();
-        final boolean opOk = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl, gitRepoUsername, gitRepoPassword, listener.getLogger());
+        final boolean opOk = GitRepoManager.updateLocalRepoIfNeedTo(repoUrl, gitRepoUsername, gitRepoPassword, oneTimeLogger);
         
         Map<String, String> resolvedVariables = new HashMap<>();
         if (opOk) {
             final String jobName = envs.get("JOB_NAME", "");
-            resolvedVariables = FilesFinder.getResolvedVariables(jobName, listener.getLogger());
+            resolvedVariables = FilesFinder.getResolvedVariables(jobName, oneTimeLogger);
         }
         
-        listener.getLogger().println("\nVariables previously defined in environment: ");
+        oneTimeLogger.println(" ");
+        oneTimeLogger.println("Variables previously defined in environment: ");
         // for (final Map.Entry<String, String> entry : envs.entrySet()) {
-        //     listener.getLogger().println("    " + entry.getKey() + " = " + entry.getValue());
+        //     oneTimeLogger.println("    " + entry.getKey() + " = " + entry.getValue());
         // }
         for (String key : resolvedVariables.keySet()) {
             String oldValue = envs.get(key, null);
             if (oldValue != null) {
-                listener.getLogger().println("    " + key + " = " + oldValue);
+                oneTimeLogger.println("    " + key + " = " + oldValue);
             }
         }
         
-        listener.getLogger().println("\nVariables set from metadata: ");
+        oneTimeLogger.println(" ");
+        oneTimeLogger.println("Variables set from metadata: ");
         for (final Map.Entry<String, String> entry : resolvedVariables.entrySet()) {
 
-            listener.getLogger().println("    " + entry.getKey() + " = " + entry.getValue());
+            oneTimeLogger.println("    " + entry.getKey() + " = " + entry.getValue());
             envs.override(entry.getKey(), entry.getValue());
         }
-        listener.getLogger().println("\n");
+        oneTimeLogger.println("\n");
         
     }
 }

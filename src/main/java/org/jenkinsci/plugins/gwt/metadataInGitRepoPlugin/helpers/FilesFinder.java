@@ -23,7 +23,13 @@ import java.util.logging.Logger;
  */
 public class FilesFinder {
 
+    private static final String KEY_METADATA_REPO_FOLDER_PATH = "METADATA_REPO_FOLDER_PATH";
+    
+    private static final String KEY_EXTRA_CFG_FILE_PATH = "EXTRA_CFG_FILE_PATH";
+    
     private static final String CFG_FILE = "config.properties";
+    
+    private static final String EXTRA_CFG_FILE = "extraCfg.json";
     
     private static final Logger LOGGER = Logger.getLogger(FilesFinder.class.getName());
     
@@ -39,6 +45,7 @@ public class FilesFinder {
         LOGGER.warning(sbMsg.toString());
         
         Map<String, String> resolvedVariables = new HashMap<>();
+        resolvedVariables = addMetadataRepoPath(repoPath, resolvedVariables, oneTimeLogger);
         
         String[] jobNameArray = jobName.split(REG_EXP);
         
@@ -56,13 +63,19 @@ public class FilesFinder {
             return resolvedVariables;
         }        
         
-        String configFileName = repoPath + File.separator + jobNameArray[0] + File.separator + CFG_FILE;
+        final String repoPathWithHead = repoPath + File.separator + jobNameArray[0];
+        
+        final String configFileName = repoPathWithHead + File.separator + CFG_FILE;
+        
+        final String extraConfigFileName = repoPathWithHead + File.separator + EXTRA_CFG_FILE;
         
         resolvedVariables = loadConfigFile(configFileName, resolvedVariables, oneTimeLogger);
         
+        resolvedVariables = addAsVariableExtraConfigFileIfExists(extraConfigFileName, resolvedVariables, oneTimeLogger);
+        
         String [] jobNameArrayTail = Arrays.copyOfRange(jobNameArray, 1, jobNameArray.length);
         
-        String repoPathWithHead = repoPath + File.separator + jobNameArray[0];
+        
         
         return loadConfigFilesRecursively(repoPathWithHead, jobNameArrayTail, resolvedVariables, oneTimeLogger);
     }
@@ -149,6 +162,36 @@ public class FilesFinder {
                 sbMsg.append(" value: ").append(valueObj);
                 oneTimeLogger.println(sbMsg.toString());
             }
+        }
+        
+        return resolvedVariables;
+    }
+    
+    private static Map<String, String> addMetadataRepoPath(String repoPath, Map<String, String> resolvedVariables, OneTimeLogger oneTimeLogger) {
+        final String key = KEY_METADATA_REPO_FOLDER_PATH;
+        final String value = repoPath;
+            
+        StringBuilder sbMsg = new StringBuilder();
+        sbMsg.append("    ").append(key).append(" = ").append(value);
+        oneTimeLogger.println(sbMsg.toString());
+                
+        resolvedVariables.put(key, value);
+        
+        return resolvedVariables;
+    }
+
+    private static Map<String, String> addAsVariableExtraConfigFileIfExists(String extraConfigFileName, Map<String, String> resolvedVariables, 
+            OneTimeLogger oneTimeLogger) {
+         
+        if (configFileExists(extraConfigFileName)) {
+            final String key = KEY_EXTRA_CFG_FILE_PATH;
+            final String value = extraConfigFileName;
+            
+            StringBuilder sbMsg = new StringBuilder();
+            sbMsg.append("    ").append(key).append(" = ").append(value);
+            oneTimeLogger.println(sbMsg.toString());
+                
+            resolvedVariables.put(key, value);
         }
         
         return resolvedVariables;

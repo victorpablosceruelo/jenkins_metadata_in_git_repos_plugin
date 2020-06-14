@@ -15,10 +15,10 @@
 
 
   <artifactId>jenkinsMetadataInGitRepoPlugin</artifactId>
-  <version>1.7</version>
+  <version>1.8</version>
   <packaging>hpi</packaging>
   <name>Jenkins Metadata In Git Repo Plugin</name>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/Envfile+Plugin</url>
+  <url>https://wiki.jenkins-ci.org/display/JENKINS/jenkinsMetadataInGitRepoPlugin</url>
   
   <developers>
     <developer>

@@ -149,12 +149,15 @@ public class FilesFinder {
             if ((keyObj instanceof String) && (valueObj instanceof String)) {
                 String key = (String) keyObj;
                 String value = (String) valueObj;
+                String cleanedValue = cleanStringValue(value);
             
                 StringBuilder sbMsg = new StringBuilder();
                 sbMsg.append("    ").append(key).append(" = ").append(value);
+                sbMsg.append(" -> ").append(cleanedValue);
+                sbMsg.append(" (").append(cleanedValue).append(").");
                 oneTimeLogger.println(sbMsg.toString());
                 
-                resolvedVariables.put(key, value);
+                resolvedVariables.put(key, cleanedValue);
                 
             } else {
                 StringBuilder sbMsg = new StringBuilder();
@@ -165,6 +168,17 @@ public class FilesFinder {
         }
         
         return resolvedVariables;
+    }
+    
+    private static String cleanStringValue(String value) {
+        value = value.trim();
+        char first = value.charAt(0);
+        char last = value.charAt(value.length() -1);
+        
+        if (('\"' == first) && ('\"' == last)) {
+            value = value.substring(1, (value.length() -1));
+        }
+        return value;
     }
     
     private static Map<String, String> addMetadataRepoPath(String repoPath, Map<String, String> resolvedVariables, OneTimeLogger oneTimeLogger) {

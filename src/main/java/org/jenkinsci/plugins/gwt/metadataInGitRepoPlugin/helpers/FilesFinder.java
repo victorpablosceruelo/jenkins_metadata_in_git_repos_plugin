@@ -49,6 +49,10 @@ public class FilesFinder {
         
         String[] jobNameArray = jobName.split(REG_EXP);
         
+        // Load repository config file (at the repository root).
+        final String repoConfigFileName = repoPath + File.separator + CFG_FILE;
+        resolvedVariables = loadConfigFile(repoConfigFileName, resolvedVariables, oneTimeLogger);
+        
         resolvedVariables = loadConfigFilesRecursively(repoPath, jobNameArray, resolvedVariables, oneTimeLogger);
         
         return resolvedVariables;

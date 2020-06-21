@@ -5,9 +5,11 @@
  */
 package org.jenkinsci.plugins.gwt.metadataInGitRepoPlugin.helpers;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -26,6 +28,8 @@ public class FilesFinder {
     private static final String KEY_METADATA_REPO_FOLDER_PATH = "METADATA_REPO_FOLDER_PATH";
     
     private static final String KEY_EXTRA_CFG_FILE_PATH = "EXTRA_CFG_FILE_PATH";
+    
+    private static final String KEY_EXTRA_CFG_FILE_CONTENTS = "EXTRA_CFG_FILE_CONTENTS";
     
     private static final String CFG_FILE = "config.properties";
     
@@ -210,8 +214,35 @@ public class FilesFinder {
             oneTimeLogger.println(sbMsg.toString());
                 
             resolvedVariables.put(key, value);
+            
+            String configFileContents = getConfigFileContents(extraConfigFileName, oneTimeLogger);
+            resolvedVariables.put(KEY_EXTRA_CFG_FILE_CONTENTS, configFileContents);
         }
         
         return resolvedVariables;
+    }
+    
+    private static String getConfigFileContents(String extraConfigFileName, OneTimeLogger oneTimeLogger) {
+
+        StringBuilder contentBuilder = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new FileReader(extraConfigFileName))) 
+        {
+ 
+            String sCurrentLine;
+            while ((sCurrentLine = br.readLine()) != null) 
+            {
+                contentBuilder.append(sCurrentLine);
+            }
+        } 
+        catch (IOException e) 
+        {
+            oneTimeLogger.println("----------------------");
+            oneTimeLogger.println("EXCEPTION READING FILE " + extraConfigFileName);
+            oneTimeLogger.println(e.getMessage());
+            e.printStackTrace();
+            oneTimeLogger.println("----------------------");
+            return null;
+        }
+        return contentBuilder.toString();
     }
 }

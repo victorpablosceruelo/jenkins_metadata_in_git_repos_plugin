@@ -9,9 +9,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -224,24 +225,57 @@ public class FilesFinder {
     
     private static String getConfigFileContents(String extraConfigFileName, OneTimeLogger oneTimeLogger) {
 
+        String exceptionMsg = "EXCEPTION READING FILE " + extraConfigFileName;
         StringBuilder contentBuilder = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(extraConfigFileName))) 
+        FileInputStream is = null;
+        InputStreamReader isr = null;
+        BufferedReader buffReader = null;
+        try 
         {
+            is = new FileInputStream(extraConfigFileName);
+            isr = new InputStreamReader(is, Charset.forName("UTF8"));
+            buffReader = new BufferedReader(isr);
  
             String sCurrentLine;
-            while ((sCurrentLine = br.readLine()) != null) 
+            while ((sCurrentLine = buffReader.readLine()) != null) 
             {
                 contentBuilder.append(sCurrentLine);
             }
-        } 
-        catch (IOException e) 
-        {
+            
+        } catch (IOException e) {
+            
             oneTimeLogger.println("----------------------");
-            oneTimeLogger.println("EXCEPTION READING FILE " + extraConfigFileName);
+            oneTimeLogger.println(exceptionMsg);
             oneTimeLogger.println(e.getMessage());
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, exceptionMsg, e);
             oneTimeLogger.println("----------------------");
+            
             return null;
+            
+        } finally {
+            try {
+                if (buffReader != null) {
+                    buffReader.close();
+                }
+            } catch (IOException e2) {
+                LOGGER.log(Level.SEVERE, exceptionMsg, e2);
+            }
+            
+            try {
+                if (isr != null) {
+                    isr.close();
+                }
+            } catch (IOException e2) {
+                LOGGER.log(Level.SEVERE, exceptionMsg, e2);
+            }
+            
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException e2) {
+                LOGGER.log(Level.SEVERE, exceptionMsg, e2);
+            }
         }
         return contentBuilder.toString();
     }

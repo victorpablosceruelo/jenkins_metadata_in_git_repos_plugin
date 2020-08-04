@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.DetachedHeadException;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -23,6 +24,7 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -34,7 +36,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
  */
 public class GitRepoManager {
     
-    private static final int MAX_RETRIES_FOR_OPERATION = 10;
+    private static final int MAX_RETRIES_FOR_OPERATION = 5;
     private static final String GIT_REPOSITORY_TAIL = "/.git";
     public static final String GIT_REPOSITORY_LOCAL_PATH = "/tmp/jenkins_projects_metadata";
     
@@ -70,18 +72,15 @@ public class GitRepoManager {
     }
     
     private OneTimeLogger oneTimeLogger;
-    private int currentRetry;
     
     private final String remotePath;
     private final String localPath;
-    private Repository localRepo;
     private CredentialsProvider credentialsProvider;
     
     
     private GitRepoManager(final String remotePath, final String localPath, final String gitRepoUsername, final String gitRepoPassword, OneTimeLogger oneTimeLogger) {
         
         this.oneTimeLogger = oneTimeLogger;
-        this.currentRetry = 0;
         
         this.remotePath = remotePath;
         this.localPath = localPath;
@@ -93,10 +92,6 @@ public class GitRepoManager {
     }
     
     private boolean cloneRepo() {
-        if (currentRetry >= MAX_RETRIES_FOR_OPERATION) {
-            return false;
-        }
-        
         try {
             cloneRepoAux();
             return true;
@@ -104,13 +99,11 @@ public class GitRepoManager {
             LOGGER.log(Level.SEVERE, "cloneRepo: ", e);
             oneTimeLogger.println("Error cloning remote git repository: " + e.getMessage());
             removeLocalRepositoryIfExists();
-            return false;
         } catch (GitAPIException e) {
             LOGGER.log(Level.SEVERE, "cloneRepo: ", e);
             oneTimeLogger.println("Error cloning remote git repository: " + e.getMessage());
         }
-        currentRetry++;
-        return cloneRepo();
+        return false;
     }
     
     private void cloneRepoAux() throws IOException, NoFilepatternException, GitAPIException {
@@ -121,35 +114,57 @@ public class GitRepoManager {
     }
     
     private boolean pullFromRepo() {
-        if (currentRetry >= MAX_RETRIES_FOR_OPERATION) {
-            return false;
-        }
         
+        Git git = null;
         try {
-            pullFromRepoAux();
-            return true;
+            Repository localRepo = new FileRepository(getFileRepositoryPath());
+            git = new Git(localRepo);
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
             oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
             removeLocalRepositoryIfExists();
             return false;
-        } catch (GitAPIException e) {
-            LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
-            oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
         }
-        currentRetry++;
-        return pullFromRepo();
+
+        boolean resOk = resetLocalStatus(git);        
+        if (! resOk) {
+            removeLocalRepositoryIfExists();
+            return false;            
+        }
+        
+        try {
+            pullFromRepoAux(git);
+        } catch (GitAPIException e) {
+            LOGGER.log(Level.SEVERE, "pullFromRepoAux: ", e);
+            oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
+            return false;
+        }
+        return true;
     }
     
-    private void pullFromRepoAux() throws IOException, WrongRepositoryStateException,
+    private boolean resetLocalStatus(Git git) {
+        try {
+            // setRef("HEAD").
+            git.reset().setMode(ResetCommand.ResetType.HARD).call();
+        } catch (RuntimeException e) {
+            LOGGER.log(Level.SEVERE, "resetLocalStatus: ", e);
+            oneTimeLogger.println("Error forcing reset of local git repository: " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "resetLocalStatus: ", e);
+            oneTimeLogger.println("Error forcing reset of local git repository: " + e.getMessage());
+            return false;
+        } 
+
+        return true;
+    }
+    
+    private void pullFromRepoAux(Git git) throws WrongRepositoryStateException,
             InvalidConfigurationException, DetachedHeadException,
             InvalidRemoteException, CanceledException, RefNotFoundException,
             NoHeadException, GitAPIException {
         
-        localRepo = new FileRepository(getFileRepositoryPath());
-        Git git = new Git(localRepo);
-        git.pull().setCredentialsProvider(credentialsProvider)
-                .call();
+        git.pull().setCredentialsProvider(credentialsProvider).call();
     }
     
     private String getFileRepositoryPath() {
@@ -158,6 +173,7 @@ public class GitRepoManager {
     
     private boolean updateLocalRepoIfNeedTo() {
 
+        int currentRetry = 0;
         boolean opOk = false;
         while (! opOk) {
             

@@ -47,7 +47,7 @@ public class FilesFinder {
         StringBuilder sbMsg = new StringBuilder();
         sbMsg.append("getResolvedVariables: repoPath: ").append(repoPath);
         sbMsg.append(" jobName: ").append(jobName);
-        LOGGER.warning(sbMsg.toString());
+        LOGGER.log(Level.FINEST, sbMsg.toString());
         
         Map<String, String> resolvedVariables = new HashMap<>();
         resolvedVariables = addMetadataRepoPath(repoPath, resolvedVariables, oneTimeLogger);

@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.DetachedHeadException;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -52,7 +53,7 @@ public class GitRepoManager {
             Date currentDate = new Date();
             if ((lastUpdateTime == null) || (currentDate.after(lastUpdateTime))) {
                 
-                oneTimeLogger.println("Updating local copy of git repository " + repoPath);
+                oneTimeLogger.println("Trying to update git repository local copy in " + repoPath + "... ");
                 GitRepoManager gitRepoManager = new GitRepoManager(repoUrl, repoPath, gitRepoUsername, gitRepoPassword, oneTimeLogger);
                 updateRepoOk = gitRepoManager.updateLocalRepoIfNeedTo();
             } else {
@@ -61,6 +62,7 @@ public class GitRepoManager {
             }
             
             if (updateRepoOk) {
+                oneTimeLogger.println("Updated git repository local copy in " + repoPath);
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTime(currentDate);
                 calendar.add(Calendar.MINUTE, 2);
@@ -113,33 +115,54 @@ public class GitRepoManager {
                 .call();
     }
     
-    private boolean pullFromRepo() {
+    private boolean updateLocalRepoIfNeedToAux() {
         
         Git git = null;
         try {
             Repository localRepo = new FileRepository(getFileRepositoryPath());
             git = new Git(localRepo);
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
-            oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "updateLocalRepoIfNeedToAux: ", e);
+            oneTimeLogger.println("Error reading git local repo copy: " + e.getMessage());
             removeLocalRepositoryIfExists();
             return false;
         }
 
-        boolean resOk = resetLocalStatus(git);        
-        if (! resOk) {
-            removeLocalRepositoryIfExists();
-            return false;            
-        }
+        boolean repoStatusClean = isLocalCopyStatusClean(git);
+        if (! repoStatusClean) {
+            boolean resOk = resetLocalStatus(git);        
+            if (! resOk) {
+                removeLocalRepositoryIfExists();
+                return false;            
+            }
+        } 
         
         try {
-            pullFromRepoAux(git);
+            pullFromRepo(git);
         } catch (GitAPIException e) {
-            LOGGER.log(Level.SEVERE, "pullFromRepoAux: ", e);
+            LOGGER.log(Level.SEVERE, "pullFromRepo: ", e);
             oneTimeLogger.println("Error pulling from git repository: " + e.getMessage());
             return false;
         }
         return true;
+    }
+    
+    private boolean isLocalCopyStatusClean(Git git) {
+        boolean isClean = false;
+        try {
+            // setRef("HEAD").
+            Status localCopyStatus = git.status().call();
+            isClean = localCopyStatus.isClean();
+        } catch (RuntimeException e) {
+            LOGGER.log(Level.SEVERE, "isLocalCopyStatusClean: ", e);
+            oneTimeLogger.println("Error checking git repo local copy status: " + e.getMessage());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "isLocalCopyStatusClean: ", e);
+            oneTimeLogger.println("Error checking git repo local copy status: " + e.getMessage());
+        } 
+
+        oneTimeLogger.println("isLocalCopyStatusClean? " + (isClean ? "true" : "false"));
+        return isClean;        
     }
     
     private boolean resetLocalStatus(Git git) {
@@ -159,7 +182,7 @@ public class GitRepoManager {
         return true;
     }
     
-    private void pullFromRepoAux(Git git) throws WrongRepositoryStateException,
+    private void pullFromRepo(Git git) throws WrongRepositoryStateException,
             InvalidConfigurationException, DetachedHeadException,
             InvalidRemoteException, CanceledException, RefNotFoundException,
             NoHeadException, GitAPIException {
@@ -185,7 +208,7 @@ public class GitRepoManager {
             if ((fileRepository.exists()) && (fileRepository.isDirectory()) && 
                     (fileRepository.canRead()) && (fileRepository.canWrite()) && 
                     (fileRepository.canExecute())) {
-                opOk = pullFromRepo();
+                opOk = updateLocalRepoIfNeedToAux();
             }
             else {
                 removeLocalRepositoryIfExists();
